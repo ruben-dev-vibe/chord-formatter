@@ -1,6 +1,10 @@
-# ChordSheet
+# ChordSheet Formatter
 
-A modern, responsive chord sheet formatter built for musicians. Easily format lyrics with chords, transpose songs into different keys, and save your favorite songs for quick access.
+A simple and responsive web app for formatting chord sheets, transposing chords, and managing saved songs.
+
+## Live Demo
+
+Try the app here: [ChordSheet Formatter](https://chord-formatter.vercel.app/)
 
 ## Features
 
