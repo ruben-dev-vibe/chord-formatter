@@ -340,8 +340,8 @@ button {
   display: inline-block;
   position: relative;
   vertical-align: baseline;
-  padding-top: 18px;
-  line-height: 22px;
+  padding-top: 0.9em;
+  line-height: 1.3;
 }
 
 .chord {
@@ -349,9 +349,9 @@ button {
   top: 0;
   left: 0;
   color: #467b14;
-  font-size: 12px;
+  font-size: 0.85em;
   font-weight: 700;
-  line-height: 18px;
+  line-height: 1.2;
 }
 
 .lyrics {
@@ -494,7 +494,7 @@ button {
 
 .stage-mode .chord {
   color: #e4ff70;
-  font-size: 16px;
+  font-size: 0.85em;
   font-weight: 800;
 }
 
@@ -580,34 +580,54 @@ button {
     color: black !important;
   }
 
-  .sheet-kicker,
-  .sheet-content .chord {
-    color: #467b14 !important;
-  }
-
   .sheet-content {
-    font-size: 12pt !important;
-    line-height: 2.5 !important;
+    font-size: 12px;
+    line-height: 1.6 !important;
+    color: #222222 !important;
   }
 
   .sheet-content .chord {
-    font-size: 11pt !important;
+    font-family: "Courier New", monospace !important;
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    color: #A30000 !important;
   }
+
+  .sheet-content .lyrics,
+  .sheet-content .plain-text {
+    font-family: Arial, sans-serif !important;
+    font-size: 12pt !important;
+    font-weight: normal !important;
+    color: #222222 !important;
+  }
+
   .sheet-preview h2 {
-  font-size: 26px;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 8px;
-  color: #000;
+    font-size: 26pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-bottom: 8px !important;
+    color: #111111 !important;
   }
 
   .sheet-preview p {
-    font-size: 14px;
-    text-align: center;
-    margin-bottom: 24px;
-    color: #444;
+    font-size: 11pt !important;
+    font-style: italic !important;
+    text-align: center !important;
+    margin-bottom: 24px !important;
+    color: #777777 !important;
   }
-
+  .pdf-brand-footer {
+    display: block !important;
+  position: static !important;
+  width: 100%;
+  text-align: center;
+  font-family: "DM Mono", monospace !important;
+  font-size: 9pt !important;
+  letter-spacing: 2px;
+  color: #777777 !important;
+  margin-top: 40px !important;
+  padding-top: 10px !important;
+  }
 }
 .song-details {
   display: grid;
@@ -842,4 +862,22 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.preview-fullscreen .sheet-content {
+  text-align: center;
+}
+.preview-fullscreen .sheet-title {
+  text-align: center;
+}
+
+.preview-fullscreen .sheet-title h2 {
+  text-align: center;
+}
+
+.preview-fullscreen .sheet-title p {
+  text-align: center;
+}
+
+.sheet-preview .pdf-brand-footer {
+  display: none;
 }

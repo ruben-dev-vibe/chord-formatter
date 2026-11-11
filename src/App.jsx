@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 
 const NOTES = [
@@ -7,10 +7,36 @@ const NOTES = [
   'F#', 'G', 'G#', 'A', 'A#', 'B'
 ]
 
+
 const SAMPLE_SHEET = `[G]Amazing grace, how [C]sweet the [G]sound
 That [D]saved a [G]wretch like [D]me
 I [G]once was [C]lost, but [G]now am [D]found
-Was [G]blind, but [C]now I [G]see`
+Was [G]blind, but [C]now I [G]see
+
+[G]Twas grace that [C]taught my [G]heart to fear
+And [D]grace my [G]fears re[D]lieved
+How [G]precious [C]did that [G]grace ap[D]pear
+The [G]hour I [C]first be[G]lieved
+
+[G]Through many [C]dangers, [G]toils and snares
+I [D]have al[G]ready [D]come
+'Tis [G]grace hath [C]brought me [G]safe thus [D]far
+And [G]grace will [C]lead me [G]home
+
+[G]The Lord has [C]promised [G]good to me
+His [D]word my [G]hope se[D]cures
+He [G]will my [C]shield and [G]portion [D]be
+As [G]long as [C]life en[G]dures
+
+[G]Yes, when this [C]flesh and [G]heart shall fail
+And [D]mortal [G]life shall [D]cease
+I [G]shall pos[C]sess, within the [G]veil
+A [G]life of [C]joy and [G]peace
+
+[G]When we've been [C]there ten [G]thousand years
+Bright [D]shining [G]as the [D]sun
+We've [G]no less [C]days to [G]sing God's [D]praise
+Than [G]when we [C]first be[G]gun`
 
 function transposeChord(chord, steps) {
   const transposeNote = (note) => {
@@ -84,8 +110,26 @@ export default function App() {
   const [transpose, setTranspose] = useState(0)
   const [stageMode, setStageMode] = useState(false)
   const [previewFullscreen, setPreviewFullscreen] = useState(false)
+  const [previewFontSize, setPreviewFontSize] = useState(18)
+  const [autoScroll, setAutoScroll] = useState(false)
+  const [scrollSpeed, setScrollSpeed] = useState(1)
+  const sheetPreviewRef = useRef(null)
+    useEffect(() => {
+      if (!autoScroll) return
+
+      const container = sheetPreviewRef.current
+
+      if (!container) return
+
+      const interval = setInterval(() => {
+        container.scrollTop += scrollSpeed
+      }, 50)
+
+      return () => clearInterval(interval)
+    }, [autoScroll, scrollSpeed])
 
   const [showSavedSongs, setShowSavedSongs] = useState(false);
+
   const [savedSongs, setSavedSongs] = useState(() => {
     return JSON.parse(localStorage.getItem("savedSongs") || "[]");
   });
@@ -94,6 +138,7 @@ export default function App() {
 
   const [songTitle, setSongTitle] = useState('Amazing Grace')
   const [artist, setArtist] = useState('Traditional Hymn')
+  const [instrument, setInstrument] = useState('Guitar')
 
   const lines = input.split('\n')
 
@@ -106,6 +151,7 @@ export default function App() {
 
     setSongTitle('')
     setArtist('')
+    setInstrument('Guitar')
     setInput('')
     setTranspose(0)
     setSelectedSongId(null)
@@ -114,6 +160,7 @@ export default function App() {
   const loadSampleSong = () => {
     setSongTitle('Amazing Grace')
     setArtist('Traditional Hymn')
+    setInstrument('Guitar')
     setInput(SAMPLE_SHEET)
     setTranspose(0)
     setSelectedSongId(null)
@@ -136,6 +183,7 @@ export default function App() {
       id: Date.now(),
       title: songTitle,
       artist: artist,
+      instrument: instrument,
       lyrics: input,
       transpose: transpose,
     };
@@ -164,6 +212,7 @@ export default function App() {
             ...song,
             title: songTitle,
             artist: artist,
+            instrument: instrument,
             lyrics: input,
             transpose: transpose,
           }
@@ -192,7 +241,7 @@ export default function App() {
     }
 
     const songList = savedSongs
-      .map((song, index) => `${index + 1}. ${song.title} - ${song.artist}`)
+      .map((song, index) => `${index + 1}. ${song.title} - ${song.artist} - ${song.instrument || 'Guitar'}`)
       .join('\n')
 
     const choice = prompt(
@@ -214,6 +263,7 @@ export default function App() {
 
     setSongTitle(song.title)
     setArtist(song.artist)
+    setInstrument(song.instrument || 'Guitar')
     setInput(song.lyrics)
     setTranspose(song.transpose)
 
@@ -247,7 +297,7 @@ export default function App() {
         <div className="brand">
           <div className="brand-icon">♫</div>
           <div>
-            <h1>Chord<span>Sheet</span></h1>
+            <h1>Chord<span>Formatter</span></h1>
             <p>FORMAT YOUR MUSIC, YOUR WAY</p>
           </div>
         </div>
@@ -303,6 +353,21 @@ export default function App() {
                   placeholder="Enter artist name"
                 />
               </div>
+
+              <div className="song-field">
+                <label htmlFor="instrument">INSTRUMENT</label>
+                <select
+                  id="instrument"
+                  value={instrument}
+                  onChange={(event) => setInstrument(event.target.value)}
+                >
+                  <option value="Guitar">Guitar</option>
+                  <option value="Piano">Piano</option>
+                  <option value="Ukulele">Ukulele</option>
+                  <option value="Keyboard">Keyboard</option>
+                  <option value="Bass">Bass</option>
+                </select>
+              </div>
             </div>
 
             <textarea
@@ -334,28 +399,80 @@ export default function App() {
                 <span className="panel-label">02 / PREVIEW</span>
                 <h3>Chord Sheet</h3>
               </div>
-                <div className="preview-actions">
-                  <button
-                    className="print-button"
-                    onClick={() => window.print()}
-                  >
-                    Print / Save PDF
-                  </button>
+              
+              <div className="preview-actions">
+                <button
+                  className="print-button"
+                  onClick={() => window.print()}
+                >
+                  Print / Save PDF
+                </button>
 
-                  <button
-                    className="stage-toggle"
-                    onClick={() => setStageMode((value) => !value)}
-                  >
-                    {stageMode ? 'Exit Stage Mode' : 'Stage Mode'}
-                  </button>
+                <button
+                  className="stage-toggle"
+                  onClick={() => setStageMode((value) => !value)}
+                >
+                  {stageMode ? 'Exit Stage Mode' : 'Stage Mode'}
+                </button>
 
-                  <button
-                    className="stage-toggle"
-                    onClick={() => setPreviewFullscreen((value) => !value)}
-                  >
-                    {previewFullscreen ? 'Exit Fullscreen' : 'Fullscreen Preview'}
-                  </button>
-                </div>
+                <button
+                  className="stage-toggle"
+                  onClick={() => setPreviewFullscreen((value) => !value)}
+                >
+                  {previewFullscreen ? 'Exit Fullscreen' : 'Fullscreen Preview'}
+                </button>
+
+                {previewFullscreen && (
+                  <>
+                    <button
+                      className="stage-toggle"
+                      onClick={() =>
+                        setPreviewFontSize((value) => Math.max(12, value - 2))
+                      }
+                    >
+                      A−
+                    </button>
+
+                    <button
+                      className="stage-toggle"
+                      onClick={() =>
+                        setPreviewFontSize((value) => Math.min(32, value + 2))
+                      }
+                    >
+                      A+
+                    </button>
+
+                    <button
+                      className="stage-toggle"
+                      onClick={() => setAutoScroll((value) => !value)}
+                    >
+                      {autoScroll ? 'Pause Scroll' : 'Play Scroll'}
+                    </button>
+
+                    <button
+                      className="stage-toggle"
+                      onClick={() =>
+                        setScrollSpeed((value) => Math.max(1, value - 1))
+                      }
+                    >
+                      Speed −
+                    </button>
+
+                    <span className="scroll-speed-label">
+                      Speed {scrollSpeed}
+                    </span>
+
+                    <button
+                      className="stage-toggle"
+                      onClick={() =>
+                        setScrollSpeed((value) => Math.min(5, value + 1))
+                      }
+                    >
+                      Speed +
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="transpose-bar">
@@ -403,18 +520,34 @@ export default function App() {
               </div>
             </div>
 
-            <div className="sheet-preview">
+            <div
+                className="sheet-preview"
+                ref={sheetPreviewRef}
+              >
               <div className="sheet-title">
                 <h2>{songTitle || 'Untitled Song'}</h2>
-                <p>{artist || 'Unknown Artist'}</p>
+                <p>
+                  {artist || 'Unknown Artist'} — {instrument}
+                </p>
               </div>
 
-              <div className="sheet-content">
+              <div
+                className="sheet-content"
+                style={{
+                  fontSize: previewFullscreen
+                    ? `${previewFontSize}px`
+                    : undefined,
+                }}
+              >
                 {lines.map((line, index) => (
                   <div className="sheet-line" key={index}>
                     {parseLine(line, transpose)}
                   </div>
                 ))}
+              </div>
+              
+              <div className="pdf-brand-footer">
+                ChordFormatter
               </div>
             </div>
             
@@ -461,6 +594,7 @@ export default function App() {
 
                           setSongTitle(song.title);
                           setArtist(song.artist);
+                          setInstrument(song.instrument)
                           setInput(song.lyrics);
                           setTranspose(song.transpose);
                           setShowSavedSongs(false);
