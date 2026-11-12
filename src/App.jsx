@@ -1,6 +1,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Analytics } from '@vercel/analytics/react';
+import { supabase } from './supabase'
+import Auth from './Auth'
 import './App.css'
 
 const NOTES = [
@@ -114,6 +116,51 @@ export default function App() {
   const [previewFontSize, setPreviewFontSize] = useState(18)
   const [autoScroll, setAutoScroll] = useState(false)
   const [scrollSpeed, setScrollSpeed] = useState(1)
+  const [authUser, setAuthUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthUser(session?.user ?? null)
+      setAuthLoading(false)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    const fetchSavedSongs = async () => {
+      if (!authUser) {
+        setSavedSongs([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("songs")
+        .select("*")
+        .eq("user_id", authUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading saved songs:", error);
+        alert("Unable to load your saved songs.");
+        return;
+      }
+
+      setSavedSongs(data || []);
+    };
+
+    fetchSavedSongs();
+  }, [authUser]);
+
   const sheetPreviewRef = useRef(null)
     useEffect(() => {
       if (!autoScroll) return
@@ -131,9 +178,7 @@ export default function App() {
 
   const [showSavedSongs, setShowSavedSongs] = useState(false);
 
-  const [savedSongs, setSavedSongs] = useState(() => {
-    return JSON.parse(localStorage.getItem("savedSongs") || "[]");
-  });
+  const [savedSongs, setSavedSongs] = useState([]);
   const [selectedSongId, setSelectedSongId] = useState(null);
 
 
@@ -168,128 +213,173 @@ export default function App() {
   }
 
     
-  const saveSong = () => {
-    const currentSavedSongs = JSON.parse(
-      localStorage.getItem("savedSongs") || "[]"
-    );
+  const saveSong = async () => {
+    if (!authUser) {
+      alert("Please log in to save your song.");
+      return;
+    }
 
-    if (currentSavedSongs.length >= 3) {
+    const { count, error: countError } = await supabase
+      .from("songs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", authUser.id);
+
+    if (countError) {
+      console.error("Error checking saved songs:", countError);
+      alert("Unable to check your saved songs limit.");
+      return;
+    }
+
+    if (count >= 3) {
       alert(
         "You have reached the Free Plan limit of 3 saved songs. Upgrade to Premium to save more!"
       );
       return;
     }
 
-    const song = {
-      id: Date.now(),
-      title: songTitle,
-      artist: artist,
-      instrument: instrument,
-      lyrics: input,
-      transpose: transpose,
-    };
+    const { data, error } = await supabase
+      .from("songs")
+      .insert({
+        user_id: authUser.id,
+        title: songTitle,
+        artist: artist,
+        instrument: instrument,
+        lyrics: input,
+        transpose: transpose,
+      })
+      .select()
+      .single();
 
-    const updatedSongs = [...currentSavedSongs, song];
+    if (error) {
+      console.error("Error saving song:", error);
+      alert("Unable to save your song.");
+      return;
+    }
 
-    localStorage.setItem(
-      "savedSongs",
-      JSON.stringify(updatedSongs)
-    );
-
-    setSavedSongs(updatedSongs);
+    setSavedSongs((currentSongs) => [data, ...currentSongs]);
 
     alert("Song saved successfully!");
   };
 
-  const updateSong = () => {
+  const updateSong = async () => {
     if (selectedSongId === null) {
       alert("Please select a saved song to update!");
       return;
     }
 
-    const updatedSongs = savedSongs.map((song) =>
-      song.id === selectedSongId
-        ? {
-            ...song,
-            title: songTitle,
-            artist: artist,
-            instrument: instrument,
-            lyrics: input,
-            transpose: transpose,
-          }
-        : song
-    );
+    if (!authUser) {
+      alert("Please log in to update your song.");
+      return;
+    }
 
-    setSavedSongs(updatedSongs);
+    const { data, error } = await supabase
+      .from("songs")
+      .update({
+        title: songTitle,
+        artist: artist,
+        instrument: instrument,
+        lyrics: input,
+        transpose: transpose,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", selectedSongId)
+      .eq("user_id", authUser.id)
+      .select()
+      .single();
 
-    localStorage.setItem(
-      "savedSongs",
-      JSON.stringify(updatedSongs)
+    if (error) {
+      console.error("Error updating song:", error);
+      alert("Unable to update your song.");
+      return;
+    }
+
+    setSavedSongs((currentSongs) =>
+      currentSongs.map((song) =>
+        song.id === selectedSongId ? data : song
+      )
     );
 
     alert("Song updated successfully!");
   };
 
-
-  const loadSavedSong = () => {
-    const savedSongs = JSON.parse(
-      localStorage.getItem('savedSongs') || '[]'
-    )
-
-    if (savedSongs.length === 0) {
-      alert('No saved songs found!')
-      return
-    }
-
-    const songList = savedSongs
-      .map((song, index) => `${index + 1}. ${song.title} - ${song.artist} - ${song.instrument || 'Guitar'}`)
-      .join('\n')
-
-    const choice = prompt(
-      `Choose a song to load:\n\n${songList}\n\nEnter the song number:`
-    )
-
-    const songIndex = Number(choice) - 1
-
-    if (
-      choice === null ||
-      songIndex < 0 ||
-      songIndex >= savedSongs.length
-    ) {
-      alert('Invalid song selection!')
-      return
-    }
-
-    const song = savedSongs[songIndex]
-
-    setSongTitle(song.title)
-    setArtist(song.artist)
-    setInstrument(song.instrument || 'Guitar')
-    setInput(song.lyrics)
-    setTranspose(song.transpose)
-
-    alert('Song loaded successfully!')
-  }
-
-  const deleteSavedSong = (indexToDelete) => {
+  const deleteSavedSong = async (indexToDelete) => {
     const songToDelete = savedSongs[indexToDelete];
+
+    if (!songToDelete) {
+      return;
+    }
+
+    if (!authUser) {
+      alert("Please log in to delete your song.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("songs")
+      .delete()
+      .eq("id", songToDelete.id)
+      .eq("user_id", authUser.id);
+
+    if (error) {
+      console.error("Error deleting song:", error);
+      alert("Unable to delete your song.");
+      return;
+    }
 
     if (songToDelete.id === selectedSongId) {
       setSelectedSongId(null);
     }
 
-    const updatedSongs = savedSongs.filter(
-      (_, index) => index !== indexToDelete
+    setSavedSongs((currentSongs) =>
+      currentSongs.filter((song) => song.id !== songToDelete.id)
     );
+  };
 
-    setSavedSongs(updatedSongs);
+  const handleChangePassword = async () => {
+    const newPassword = document.getElementById("new-password")?.value;
 
-    localStorage.setItem(
-      "savedSongs",
-      JSON.stringify(updatedSongs)
-    );
-};
+    if (!newPassword) {
+      alert("Please enter your new password.");
+      return;
+    }
 
+    if (newPassword.length < 6) {
+      alert("Password must be at least 6 characters long.");
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      console.error("Error updating password:", error);
+      alert(error.message);
+      return;
+    }
+
+    alert("Password updated successfully!");
+
+    document.getElementById("new-password").value = "";
+  };
+
+
+
+  if (authLoading) {
+    return <div className="auth-page">Loading...</div>
+  }
+
+  if (!authUser) {
+    return <Auth />
+  }
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      alert(error.message)
+    }
+  }
 
 
   return (
@@ -304,11 +394,83 @@ export default function App() {
           </div>
         </div>
 
-        <div className="header-badge">
-          <span className="status-dot"></span>
-          Live Preview
+        <div className="header-actions">
+          <a
+            href="mailto:moonsteraxy@gmail.com?subject=Inquiry%20about%20ChordFormatter"
+            className="email-button"
+          >
+            ✉ Email Me
+          </a>
+
+          <button
+            className="signout-button"
+            onClick={handleSignOut}
+          >
+            Sign Out
+          </button>
+
+          <button
+            className="user-avatar"
+            onClick={() => setShowAccountSettings(true)}
+            title={authUser?.email}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
+            </svg>
+          </button>
         </div>
       </header>
+      {showAccountSettings && (
+        <div className="account-settings-overlay">
+          <div className="account-settings-panel">
+            <div className="account-settings-header">
+              <h2>Account Settings</h2>
+
+              <button
+                className="close-settings-button"
+                onClick={() => setShowAccountSettings(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="account-settings-content">
+              <p className="settings-label">Logged in as</p>
+
+              <p className="settings-email">
+                {authUser?.email}
+              </p>
+              <div className="change-password-section">
+                <h3>Change Password</h3>
+
+                <input
+                  type="password"
+                  placeholder="Enter new password"
+                  id="new-password"
+                />
+
+                <button
+                  className="change-password-button"
+                  onClick={handleChangePassword}
+                >
+                  Update Password
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="main-content">
         <section className="welcome">

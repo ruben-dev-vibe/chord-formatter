@@ -35,13 +35,27 @@ button {
 }
 
 .app-header {
-  height: 82px;
-  padding: 0 7%;
+  min-height: 82px;
+  padding: 0 5%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 24px;
   border-bottom: 1px solid #222936;
   background: rgba(11, 14, 20, 0.8);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.user-email {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-left: 8px;
 }
 
 .brand {
@@ -890,4 +904,185 @@ button {
 
 .sheet-preview .pdf-brand-footer {
   display: none;
+}
+
+.email-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #b8f36b;
+  color: #0b0e14;
+  text-decoration: none;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.email-button:hover {
+  background: #c9ff85;
+  transform: translateY(-2px);
+}
+
+.signout-button {
+  padding: 10px 16px;
+  background: transparent;
+  color: #f7f7f2;
+  border: 1px solid #46505f;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.signout-button:hover {
+  background: #202936;
+  border-color: #b8f36b;
+  color: #b8f36b;
+}
+
+.user-email {
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 500;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Account Settings */
+
+.account-settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.account-settings-panel {
+  width: 420px;
+  max-width: calc(100% - 32px);
+  background: #131923;
+  border: 1px solid #303846;
+  border-radius: 16px;
+  padding: 24px;
+  color: #f1f5f9;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.account-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.account-settings-header h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.close-settings-button {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.close-settings-button:hover {
+  color: #b8f36b;
+}
+
+.account-settings-content {
+  padding: 16px;
+  background: #0b0e14;
+  border-radius: 10px;
+}
+
+.settings-label {
+  color: #94a3b8;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.settings-email {
+  color: #b8f36b;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.change-password-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #303846;
+}
+
+.change-password-section h3 {
+  font-size: 15px;
+  color: #f1f5f9;
+  margin: 0 0 12px;
+}
+
+.change-password-section input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  background: #0b0e14;
+  border: 1px solid #303846;
+  border-radius: 8px;
+  color: #f1f5f9;
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 12px;
+}
+
+.change-password-section input:focus {
+  border-color: #b8f36b;
+}
+
+.change-password-button {
+  width: 100%;
+  padding: 11px;
+  background: #b8f36b;
+  color: #0b0e14;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.change-password-button:hover {
+  background: #a5df58;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1b2430;
+  color: #b8f36b;
+  border: 1px solid #303846;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-avatar:hover {
+  background: #b8f36b;
+  color: #0b0e14;
+  border-color: #b8f36b;
+  transform: translateY(-2px);
 }
