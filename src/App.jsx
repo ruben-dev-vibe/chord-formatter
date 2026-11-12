@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react'
+import { Analytics } from '@vercel/analytics/react';
 import './App.css'
 
 const NOTES = [
@@ -292,6 +293,7 @@ export default function App() {
 
 
   return (
+    <>
     <div className={`app ${stageMode ? 'stage-mode' : ''}`}>
       <header className="app-header">
         <div className="brand">
@@ -644,5 +646,7 @@ export default function App() {
         </footer>
       </main>
     </div>
+    <Analytics />
+    </>
   )
 }
