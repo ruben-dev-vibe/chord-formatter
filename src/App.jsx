@@ -545,10 +545,6 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              
-              <div className="pdf-brand-footer">
-                ChordFormatter
-              </div>
             </div>
             
             <div className="preview-footer">

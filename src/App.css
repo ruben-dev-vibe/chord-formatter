@@ -543,19 +543,22 @@ button {
     size: A4 portrait;
     margin: 15mm;
   }
-
-  body * {
-    visibility: hidden !important;
+  .editor-panel,
+  .preview-panel .panel-header,
+  .preview-panel .transpose-bar,
+  .preview-footer,
+  .my-songs-actions {
+    display: none !important;
   }
-
-  .sheet-preview,
-  .sheet-preview * {
-    visibility: visible !important;
+  .app-header,
+  .welcome {
+    display: none !important;
   }
+  
 
   .sheet-preview {
-    position: fixed;
-    inset: 0;
+    position: relative;
+    inset: auto;
     width: 100%;
     height: auto;
     margin: 0;
@@ -591,6 +594,7 @@ button {
     font-size: 14pt !important;
     font-weight: bold !important;
     color: #A30000 !important;
+    line-height: .65 !important;
   }
 
   .sheet-content .lyrics,
@@ -616,17 +620,23 @@ button {
     margin-bottom: 24px !important;
     color: #777777 !important;
   }
-  .pdf-brand-footer {
+
+  .workspace {
     display: block !important;
-  position: static !important;
-  width: 100%;
-  text-align: center;
-  font-family: "DM Mono", monospace !important;
-  font-size: 9pt !important;
-  letter-spacing: 2px;
-  color: #777777 !important;
-  margin-top: 40px !important;
-  padding-top: 10px !important;
+  }
+
+  .preview-panel {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .panel {
+  overflow: visible !important;
   }
 }
 .song-details {
