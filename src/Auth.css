@@ -1,21 +1,21 @@
-
 .auth-page {
-  min-height: 100vh;
+  min-height: auto;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #0b0e14;
-  padding: 20px;
+  background: transparent;
+  padding: 0;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 620px;
+  max-height: 620px;
   padding: 40px;
-  background: #131923;
   border: 1px solid #293241;
   border-radius: 16px;
   color: #f7f7f2;
+  background: #06080c;
 }
 
 .auth-card h1 {

@@ -59,7 +59,7 @@ export default function Auth() {
           Your music. Your chords. Your way.
         </p>
 
-        <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+        <h2>{isLogin ? 'Welcome Back!' : 'Create Account'}</h2>
 
         <p className="auth-description">
           {isLogin

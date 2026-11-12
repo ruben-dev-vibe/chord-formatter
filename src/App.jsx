@@ -118,8 +118,10 @@ export default function App() {
   const [scrollSpeed, setScrollSpeed] = useState(1)
   const [authUser, setAuthUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -215,7 +217,9 @@ export default function App() {
     
   const saveSong = async () => {
     if (!authUser) {
-      alert("Please log in to save your song.");
+      alert(
+        "Create a free account or log in to save your songs to the cloud!"
+      );
       return;
     }
 
@@ -365,14 +369,6 @@ export default function App() {
 
 
 
-  if (authLoading) {
-    return <div className="auth-page">Loading...</div>
-  }
-
-  if (!authUser) {
-    return <Auth />
-  }
-
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut()
 
@@ -402,44 +398,64 @@ export default function App() {
             ✉ Email Me
           </a>
 
-          <button
-            className="signout-button"
-            onClick={handleSignOut}
-          >
-            Sign Out
-          </button>
-
-          <button
-            className="user-avatar"
-            onClick={() => setShowAccountSettings(true)}
-            title={authUser?.email}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {authUser ? (
+            <>
+              <button
+                className="user-avatar"
+                onClick={() => setShowAccountSettings(true)}
+                title={authUser.email}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
+                </svg>
+              </button>
+            </>
+          ) : (           
+            <button
+              className="user-avatar"
+              onClick={() => setShowAuthModal(true)}
+              title="Log In or Sign Up"
             >
-              <circle cx="12" cy="8" r="4" />
-              <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
+              </svg>
+            </button>
+          )}
         </div>
       </header>
-      {showAccountSettings && (
+      {authUser && showAccountSettings && (
         <div className="account-settings-overlay">
           <div className="account-settings-panel">
             <div className="account-settings-header">
-              <h2>Account Settings</h2>
-
+              <h2>Account Settings</h2>   
               <button
                 className="close-settings-button"
-                onClick={() => setShowAccountSettings(false)}
+                onClick={() => {
+                  setShowAccountSettings(false);
+                  setShowPasswordChange(false);
+                }}
               >
                 ✕
               </button>
@@ -451,23 +467,61 @@ export default function App() {
               <p className="settings-email">
                 {authUser?.email}
               </p>
+              
               <div className="change-password-section">
-                <h3>Change Password</h3>
-
-                <input
-                  type="password"
-                  placeholder="Enter new password"
-                  id="new-password"
-                />
-
                 <button
                   className="change-password-button"
-                  onClick={handleChangePassword}
+                  onClick={() => setShowPasswordChange(!showPasswordChange)}
                 >
-                  Update Password
+                  {showPasswordChange ? "Cancel Change Password" : "Change Password"}
                 </button>
-              </div>
+
+                {showPasswordChange && (
+                  <div className="password-change-form">
+                    <input
+                      type="password"
+                      placeholder="Enter new password"
+                      id="new-password"
+                    />
+
+                    <button
+                      className="change-password-button"
+                      onClick={handleChangePassword}
+                    >
+                      Update Password
+                    </button>
+                  </div>
+                )}
+
+                {!showPasswordChange && (
+                  <button
+                    className="change-password-button"
+                    onClick={handleSignOut}
+                  >
+                    Sign Out
+                  </button>
+                )}
+              </div>     
             </div>
+          </div>
+        </div>
+      )}
+
+      {showAuthModal && !authUser && (
+        <div className="account-settings-overlay">
+          <div className="account-settings-panel auth-modal-panel">
+            <div className="account-settings-header">
+              <h2>Log In / Sign Up</h2>
+
+              <button
+                className="close-settings-button"
+                onClick={() => setShowAuthModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <Auth />
+            
           </div>
         </div>
       )}
