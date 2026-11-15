@@ -1617,3 +1617,102 @@ button {
   margin-bottom: 16px;
   border-bottom: 1px solid #334155;
 }
+
+/*Welcome Modal Notice*/
+
+/* Welcome / Early Access Modal */
+.welcome-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.welcome-modal {
+  width: 100%;
+  max-width: 480px;
+  padding: 32px;
+  border-radius: 20px;
+  background: var(--panel-bg, #ffffff);
+  color: var(--text-color, #222222);
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: welcomeModalAppear 0.3s ease-out;
+}
+
+.welcome-modal-icon {
+  font-size: 42px;
+  margin-bottom: 12px;
+  color: #8b5cf6;
+}
+
+.welcome-modal h2 {
+  margin: 0 0 14px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.welcome-modal-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  margin-bottom: 18px;
+  border-radius: 20px;
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.welcome-modal p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.7;
+  opacity: 0.85;
+}
+
+.welcome-modal-button {
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #8b5cf6;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.welcome-modal-button:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+@keyframes welcomeModalAppear {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-modal {
+    padding: 24px 20px;
+  }
+
+  .welcome-modal h2 {
+    font-size: 22px;
+  }
+}

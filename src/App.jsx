@@ -988,9 +988,62 @@ export default function App() {
     }
   }
 
+  const [showWelcomeModal, setShowWelcomeModal] = useState(
+    !sessionStorage.getItem("welcomeModalDismissed")
+  );
 
   return (
-    <>
+  <>
+    {showWelcomeModal && (
+      <div className="welcome-modal-overlay">
+        <div
+          className="welcome-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="welcome-modal-title"
+        >
+          <div className="welcome-modal-icon">♫</div>
+
+          <h2 id="welcome-modal-title">
+            Welcome to ChordFormatter!
+          </h2>
+
+          <span className="welcome-modal-badge">
+            EARLY ACCESS
+          </span>
+
+          <p>
+            Thanks for visiting ChordFormatter!
+          </p>
+
+          <p>
+            This website is still under development.
+            Some features may be incomplete, and certain
+            buttons may not work as expected.
+          </p>
+
+          <p>
+            We're continuously working to improve your
+            experience. We appreciate your patience
+            and feedback!
+          </p>
+
+          <button
+            className="welcome-modal-button"
+            onClick={() => {
+              sessionStorage.setItem(
+                "welcomeModalDismissed",
+                "true"
+              );
+              setShowWelcomeModal(false);
+            }}
+          >
+            I Understand — Let's Get Started
+          </button>
+        </div>
+      </div>
+    )}
+
     <div className={`app ${stageMode ? 'stage-mode' : ''}`}>
       <header className="app-header">
         <div className="brand">
