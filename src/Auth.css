@@ -9,13 +9,14 @@
 
 .auth-card {
   width: 100%;
-  max-width: 620px;
-  max-height: 620px;
+  height: 100%;
+  max-width: 600px;
+  max-height: 600px;
   padding: 40px;
   border: 1px solid #293241;
   border-radius: 16px;
   color: #f7f7f2;
-  background: #06080c;
+  background: #0a0e17;
 }
 
 .auth-card h1 {

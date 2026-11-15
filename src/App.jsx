@@ -4,12 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './supabase'
 import Auth from './Auth'
 import './App.css'
-
-const NOTES = [
-  'C', 'C#', 'D', 'D#', 'E', 'F',
-  'F#', 'G', 'G#', 'A', 'A#', 'B'
-]
-
+import ProfileModals from "./ProfileModals";
 
 const SAMPLE_SHEET = `[G]Amazing grace, how [C]sweet the [G]sound
 That [D]saved a [G]wretch like [D]me
@@ -41,32 +36,52 @@ Bright [D]shining [G]as the [D]sun
 We've [G]no less [C]days to [G]sing God's [D]praise
 Than [G]when we [C]first be[G]gun`
 
-function transposeChord(chord, steps) {
+
+const SHARP_NOTES = [
+  'C', 'C#', 'D', 'D#', 'E', 'F',
+  'F#', 'G', 'G#', 'A', 'A#', 'B'
+];
+
+const FLAT_NOTES = [
+  'C', 'Db', 'D', 'Eb', 'E', 'F',
+  'Gb', 'G', 'Ab', 'A', 'Bb', 'B'
+];
+
+function transposeChord(chord, steps, useFlats = false) {
   const transposeNote = (note) => {
     const normalized = note
       .replace('Db', 'C#')
       .replace('Eb', 'D#')
+      .replace('Fb', 'E')
       .replace('Gb', 'F#')
       .replace('Ab', 'G#')
       .replace('Bb', 'A#')
+      .replace('Cb', 'B')
+      .replace('E#', 'F')
+      .replace('B#', 'C');
 
-    const index = NOTES.indexOf(normalized)
+    const index = SHARP_NOTES.indexOf(normalized);
 
-    if (index === -1) return note
+    if (index === -1) return note;
 
-    return NOTES[(index + steps + 12) % 12]
-  }
+    const newIndex = (((index + steps) % 12) + 12) % 12;
+
+    return useFlats
+      ? FLAT_NOTES[newIndex]
+      : SHARP_NOTES[newIndex];
+  };
 
   return chord.replace(
     /^([A-G](?:#|b)?)(.*?)(?:\/([A-G](?:#|b)?))?$/,
     (_, root, quality, bass) => {
-      const newRoot = transposeNote(root)
-      const newBass = bass ? `/${transposeNote(bass)}` : ''
+      const newRoot = transposeNote(root);
+      const newBass = bass ? `/${transposeNote(bass)}` : '';
 
-      return `${newRoot}${quality}${newBass}`
+      return `${newRoot}${quality}${newBass}`;
     }
-  )
+  );
 }
+
 
 function parseLine(line, transpose) {
   const parts = line.split(/(\[[^\]]+\])/g)
@@ -107,12 +122,462 @@ function parseLine(line, transpose) {
     )
   })
 }
+function getUniqueChords(input, netSteps) {
+  const chordMatches = input.match(/\[([^\]]+)\]/g) || [];
+
+  const chords = chordMatches.map((match) => {
+    const chord = match.slice(1, -1);
+    return transposeChord(chord, netSteps);
+  });
+
+  return [...new Set(chords)];
+}
+function ChordDiagram({ chord }) {
+  
+const chordShapes = {
+  G:  [3, 2, 0, 0, 0, 3],
+  C:  [-1, 3, 2, 0, 1, 0],
+  D:  [-1, -1, 0, 2, 3, 2],
+  Am: [-1, 0, 2, 2, 1, 0],
+  Em: [0, 2, 2, 0, 0, 0],
+  E:  [0, 2, 2, 1, 0, 0],
+  A:  [-1, 0, 2, 2, 2, 0],
+  B: [-1, 2, 4, 4, 4, 2],
+  Dm: [-1, -1, 0, 2, 3, 1],
+  F:  [1, 3, 3, 2, 1, 1],
+
+  // Major sharp chords
+  "F#": [2, 4, 4, 3, 2, 2],
+  "C#": [-1, 4, 6, 6, 6, 4],
+  "G#": [4, 6, 6, 5, 4, 4],
+  "D#": [-1, 6, 8, 8, 8, 6],
+  "A#": [-1, 1, 3, 3, 3, 1],
+
+  // Major flat chords
+  Bb: [-1, 1, 3, 3, 3, 1],
+  Eb: [-1, 6, 8, 8, 8, 6],
+  Ab: [4, 6, 6, 5, 4, 4],
+};
+
+  const fingers = chordShapes[chord] || [-1, -1, -1, -1, -1, -1];
+
+  const highestFret = Math.max(...fingers);
+  const baseFret = highestFret > 4 ? highestFret - 3 : 1;
+
+  return (
+    <div className="chord-diagram">
+      <h4>{chord}</h4>
+
+      <svg
+        viewBox="0 0 120 150"
+        className="chord-diagram-svg"
+      >
+        {[20, 36, 52, 68, 84, 100].map((x, index) => (
+          <line
+            key={x}
+            x1={x}
+            y1="30"
+            x2={x}
+            y2="110"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        {[30, 50, 70, 90, 110].map((y) => (
+          <line
+            key={y}
+            x1="20"
+            y1={y}
+            x2="100"
+            y2={y}
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        <line
+          x1="20"
+          y1="30"
+          x2="100"
+          y2="30"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+                
+        {fingers.map((fret, index) => {
+          const x = 20 + index * 16;
+
+          // Muted string
+          if (fret === -1) {
+            return (
+              <text
+                key={index}
+                x={x}
+                y="20"
+                textAnchor="middle"
+                fill="#f87171"
+                fontSize="14"
+                fontWeight="bold"
+              >
+                ×
+              </text>
+            );
+          }
+
+          // Open string
+          if (fret === 0) {
+            return (
+              <circle
+                key={index}
+                cx={x}
+                cy="20"
+                r="4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+            );
+          }
+          // Fretted string
+          const y = 30 + (fret - baseFret + 1) * 20 - 10;
+
+          return (
+            <circle
+              key={index}
+              cx={x}
+              cy={y}
+              r="5"
+              fill="#b8f36b"
+            />
+        );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function UkuleleChordDiagram({ chord }) {
+  
+const chordShapes = {
+  C:  [0, 0, 0, 3],
+  G:  [0, 2, 3, 2],
+  Am: [2, 0, 0, 0],
+  F:  [2, 0, 1, 0],
+  D:  [2, 2, 2, 0],
+  A:  [2, 1, 0, 0],
+  Bb: [3, 2, 1, 1],
+  B:  [4, 3, 2, 2],
+  "C#": [1, 1, 1, 4],
+  Eb: [3, 3, 3, 1],
+  E:  [4, 4, 4, 2],
+  "F#": [3, 1, 2, 1],
+  Ab: [1, 3, 4, 3],
+  Gm: [0, 2, 3, 1],
+  Dm: [2, 2, 1, 0],
+  Em: [0, 4, 3, 2],
+};
+
+
+  const frets = chordShapes[chord] || [0, 0, 0, 0];
+
+  return (
+    <div className="chord-diagram">
+      <h4>{chord}</h4>
+
+      <svg
+        viewBox="0 0 120 150"
+        className="chord-diagram-svg"
+      >
+        {/* Four Ukulele strings */}
+        {[30, 50, 70, 90].map((x) => (
+          <line
+            key={x}
+            x1={x}
+            y1="30"
+            x2={x}
+            y2="110"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        {/* Frets */}
+        {[30, 50, 70, 90, 110].map((y) => (
+          <line
+            key={y}
+            x1="30"
+            y1={y}
+            x2="90"
+            y2={y}
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        {/* Nut */}
+        <line
+          x1="30"
+          y1="30"
+          x2="90"
+          y2="30"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+
+        {/* Finger positions and open strings */}
+        {frets.map((fret, index) => {
+          const x = 30 + index * 20;
+
+          if (fret === 0) {
+            return (
+              <circle
+                key={index}
+                cx={x}
+                cy="20"
+                r="4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+            );
+          }
+
+          const y = 30 + fret * 20 - 10;
+
+          return (
+            <circle
+              key={index}
+              cx={x}
+              cy={y}
+              r="5"
+              fill="#b8f36b"
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function PianoChordDiagram({ chord }) {
+  const chordNotes = {
+    // Major chords
+    C: ["C", "E", "G"],
+    D: ["D", "F#", "A"],
+    E: ["E", "G#", "B"],
+    F: ["F", "A", "C"],
+    G: ["G", "B", "D"],
+    A: ["A", "C#", "E"],
+    B: ["B", "D#", "F#"],
+
+    // Sharp major chords
+    "C#": ["C#", "F", "G#"],
+    "D#": ["D#", "G", "A#"],
+    "F#": ["F#", "A#", "C#"],
+    "G#": ["G#", "C", "D#"],
+    "A#": ["A#", "D", "F"],
+
+    // Flat major chords
+    Bb: ["A#", "D", "F"],
+    Eb: ["D#", "G", "A#"],
+    Ab: ["G#", "C", "D#"],
+
+    // Minor chords
+    Cm: ["C", "D#", "G"],
+    Dm: ["D", "F", "A"],
+    Em: ["E", "G", "B"],
+    Fm: ["F", "G#", "C"],
+    Gm: ["G", "A#", "D"],
+    Am: ["A", "C", "E"],
+    Bm: ["B", "D", "F#"],
+
+    // Sharp minor chords
+    "C#m": ["C#", "E", "G#"],
+    "D#m": ["D#", "F#", "A#"],
+    "F#m": ["F#", "A", "C#"],
+    "G#m": ["G#", "B", "D#"],
+    "A#m": ["A#", "C#", "F"],
+
+    // Flat minor chords
+    Bbm: ["A#", "C#", "F"],
+    Ebm: ["D#", "F#", "A#"],
+    Abm: ["G#", "B", "D#"],
+  }
+
+  const notes = chordNotes[chord] || [];
+
+  const whiteKeys = ["C", "D", "E", "F", "G", "A", "B"];
+
+  const blackKeys = [
+    { note: "C#", position: 0.7 },
+    { note: "D#", position: 1.7 },
+    { note: "F#", position: 3.7 },
+    { note: "G#", position: 4.7 },
+    { note: "A#", position: 5.7 },
+  ];
+
+  return (
+    <div className="chord-diagram">
+      <h4>{chord}</h4>
+
+      <svg
+        viewBox="0 0 140 100"
+        className="chord-diagram-svg"
+      >
+        {whiteKeys.map((note, index) => (
+          <rect
+            key={note}
+            x={10 + index * 17}
+            y="10"
+            width="17"
+            height="70"
+            fill={notes.includes(note) ? "#b8f36b" : "#ffffff"}
+            stroke="#0f172a"
+            strokeWidth="1"
+          />
+        ))}
+
+        {blackKeys.map(({ note, position }) => (
+          <rect
+            key={note}
+            x={10 + position * 17}
+            y="10"
+            width="11"
+            height="42"
+            rx="2"
+            fill={notes.includes(note) ? "#b8f36b" : "#0f172a"}
+          />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function BassChordDiagram({ chord }) {  
+  const chordShapes = {
+    // Major chords
+    C:  [3, 3, 5, 5],
+    D:  [5, 5, 7, 7],
+    E:  [0, 2, 2, 1],
+    F:  [1, 3, 3, 1],
+    G:  [3, 2, 0, 0],
+    A:  [0, 0, 2, 2],
+    B:  [2, 4, 4, 2],
+
+    // Sharp major chords
+    "C#": [4, 4, 6, 6],
+    "D#": [6, 6, 8, 8],
+    "F#": [2, 4, 4, 3],
+    "G#": [4, 6, 6, 5],
+    "A#": [1, 3, 3, 2],
+
+    // Flat major chords
+    Bb: [1, 3, 3, 2],
+    Eb: [6, 6, 8, 8],
+    Ab: [4, 6, 6, 5],
+
+    // Minor chords
+    Cm:  [3, 1, 1, 3],
+    Dm:  [5, 3, 3, 5],
+    Em:  [0, 2, 2, 0],
+    Fm:  [1, 3, 3, 0],
+    Gm:  [3, 1, 0, 0],
+    Am:  [0, 0, 2, 2],
+    Bm:  [2, 4, 4, 2],
+
+    // Sharp minor chords
+    "C#m": [4, 2, 2, 4],
+    "D#m": [6, 4, 4, 6],
+    "F#m": [2, 4, 4, 2],
+    "G#m": [4, 2, 1, 1],
+    "A#m": [1, 3, 2, 2],
+
+    // Flat minor chords
+    Bbm: [1, 3, 2, 2],
+    Ebm: [6, 4, 4, 6],
+    Abm: [4, 2, 1, 1],
+  };
+  const frets = chordShapes[chord] || [0, 0, 0, 0];
+  const highestFret = Math.max(...frets);
+  const baseFret = highestFret > 4 ? highestFret - 3 : 1;
+
+  return (
+    <div className="chord-diagram">
+      <h4>{chord}</h4>
+
+      <svg
+        viewBox="0 0 120 150"
+        className="chord-diagram-svg"
+      >
+        {/* Four Bass strings */}
+        {[30, 50, 70, 90].map((x) => (
+          <line
+            key={x}
+            x1={x}
+            y1="30"
+            x2={x}
+            y2="110"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          />
+        ))}
+
+        {/* Frets */}
+        {[30, 50, 70, 90, 110].map((y) => (
+          <line
+            key={y}
+            x1="30"
+            y1={y}
+            x2="90"
+            y2={y}
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        {/* Nut */}
+        <line
+          x1="30"
+          y1="30"
+          x2="90"
+          y2="30"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+
+        {/* Fret positions */}
+        {frets.map((fret, index) => {
+          if (fret === 0) return null;
+
+          const x = 30 + index * 20;
+          const y = 30 + (fret - baseFret + 1) * 20 - 10;
+
+          return (
+            <circle
+              key={index}
+              cx={x}
+              cy={y}
+              r="5"
+              fill="#b8f36b"
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+
 
 export default function App() {
   const [input, setInput] = useState(SAMPLE_SHEET)
   const [transpose, setTranspose] = useState(0)
   const [stageMode, setStageMode] = useState(false)
+
   const [previewFullscreen, setPreviewFullscreen] = useState(false)
+  const [isFullscreenEdit, setIsFullscreenEdit] = useState(false);
+
   const [previewFontSize, setPreviewFontSize] = useState(18)
   const [autoScroll, setAutoScroll] = useState(false)
   const [scrollSpeed, setScrollSpeed] = useState(1)
@@ -122,6 +587,35 @@ export default function App() {
 
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
+  const [activeProfileModal, setActiveProfileModal] = useState(null);
+
+  const [capo, setCapo] = useState(0);
+  const [previewColumns, setPreviewColumns] = useState(1);
+
+  const [showChordDiagrams, setShowChordDiagrams] = useState("show");
+
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    if (showProfileMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showProfileMenu]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -179,7 +673,6 @@ export default function App() {
     }, [autoScroll, scrollSpeed])
 
   const [showSavedSongs, setShowSavedSongs] = useState(false);
-
   const [savedSongs, setSavedSongs] = useState([]);
   const [selectedSongId, setSelectedSongId] = useState(null);
 
@@ -187,34 +680,130 @@ export default function App() {
   const [songTitle, setSongTitle] = useState('Amazing Grace')
   const [artist, setArtist] = useState('Traditional Hymn')
   const [instrument, setInstrument] = useState('Guitar')
+  const [instrumentDropdownOpen, setInstrumentDropdownOpen] = useState(false);
+  const [songKey, setSongKey] = useState("C");
+  const [keyDropdownOpen, setKeyDropdownOpen] = useState(false);
+  const [tempo, setTempo] = useState("120");
 
   const lines = input.split('\n')
 
-  const clearSong = () => {
-    const confirmed = window.confirm(
-      'Are you sure you want to clear this song? This action cannot be undone.'
-    )
-
-    if (!confirmed) return
-
-    setSongTitle('')
-    setArtist('')
-    setInstrument('Guitar')
-    setInput('')
-    setTranspose(0)
-    setSelectedSongId(null)
-  }
+  const newSong = () => {
+    setSongTitle('');
+    setArtist('');
+    setInstrument('Guitar');
+    setSongKey('');
+    setTempo('');
+    setInput('');
+    setTranspose(0);
+    setSelectedSongId(null);
+  };
 
   const loadSampleSong = () => {
-    setSongTitle('Amazing Grace')
-    setArtist('Traditional Hymn')
-    setInstrument('Guitar')
-    setInput(SAMPLE_SHEET)
-    setTranspose(0)
-    setSelectedSongId(null)
-  }
+    setSongTitle("Amazing Grace");
+    setArtist("Traditional Hymn");
+    setInstrument("Piano");
+    setSongKey("G");
+    setTempo("100");
+    setInput(SAMPLE_SHEET);
+    setTranspose(0);
+    setSelectedSongId(null);
+  };
+
+  const insertSection = (section) => {
+    const textarea = document.querySelector(".chord-input");
+
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    const newText =
+      input.substring(0, start) +
+      `[${section}]\n` +
+      input.substring(end);
+
+    setInput(newText);
+  };
+
+  const insertSymbol = (symbol) => {
+    const textarea = document.querySelector(".chord-input");
+
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    const newText =
+      input.substring(0, start) +
+      symbol +
+      input.substring(end);
+
+    setInput(newText);
+
+    setTimeout(() => {
+      textarea.focus({ preventScroll: true });
+
+      const newCursorPosition = start + symbol.length;
+
+      textarea.setSelectionRange(
+        newCursorPosition,
+        newCursorPosition
+      );
+    }, 0);
+  };
+
+  const autoFormatPaste = () => {
+    const lines = input
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+
+    const formattedLines = [];
+
+    lines.forEach((line) => {
+      const isSection = /^\[(Verse|Chorus|Bridge|Intro|Outro|Pre-Chorus)(\s*\d*)?\]$/i.test(line);
+
+      if (isSection && formattedLines.length > 0) {
+        formattedLines.push("");
+      }
+
+      formattedLines.push(line);
+    });
+
+    setInput(formattedLines.join("\n"));
+  };
+
+  const [showEditorOptions, setShowEditorOptions] = useState(false);
+  const [isOptionsPinned, setIsOptionsPinned] = useState(false);
+  const editorOptionsRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        editorOptionsRef.current &&
+        !editorOptionsRef.current.contains(event.target) &&
+        !isOptionsPinned
+      ) {
+        setShowEditorOptions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOptionsPinned]);
+
+  useEffect(() => {
+    document.body.style.overflow = isFullscreenEdit ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isFullscreenEdit]);
 
     
+  
   const saveSong = async () => {
     if (!authUser) {
       alert(
@@ -250,6 +839,8 @@ export default function App() {
         instrument: instrument,
         lyrics: input,
         transpose: transpose,
+        song_key: songKey,
+        tempo: Number(tempo),
       })
       .select()
       .single();
@@ -284,6 +875,8 @@ export default function App() {
         instrument: instrument,
         lyrics: input,
         transpose: transpose,
+        song_key: songKey,
+        tempo: Number(tempo),
         updated_at: new Date().toISOString(),
       })
       .eq("id", selectedSongId)
@@ -339,6 +932,22 @@ export default function App() {
     );
   };
 
+  
+  const loadSavedSong = (song) => {
+    setSongTitle(song.title || '');
+    setArtist(song.artist || '');
+    setInstrument(song.instrument || 'Guitar');
+    setInput(song.lyrics || '');
+    setTranspose(song.transpose || 0);
+
+    // Restore Song Key and Tempo
+    setSongKey(song.song_key || 'C');
+    setTempo(String(song.tempo || 120));
+
+    setSelectedSongId(song.id);
+    setShowSavedSongs(false);
+  };
+
   const handleChangePassword = async () => {
     const newPassword = document.getElementById("new-password")?.value;
 
@@ -366,14 +975,16 @@ export default function App() {
 
     document.getElementById("new-password").value = "";
   };
-
-
-
+  
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut()
 
     if (error) {
       alert(error.message)
+    } else {
+      setShowAccountSettings(false)
+      setShowPasswordChange(false)
+      setShowAuthModal(false)
     }
   }
 
@@ -390,7 +1001,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="header-actions">
+        <div className="header-actions" ref={profileMenuRef}>
           <a
             href="mailto:moonsteraxy@gmail.com?subject=Inquiry%20about%20ChordFormatter"
             className="email-button"
@@ -401,8 +1012,8 @@ export default function App() {
           {authUser ? (
             <>
               <button
-                className="user-avatar"
-                onClick={() => setShowAccountSettings(true)}
+                className={`user-avatar ${showProfileMenu ? "active" : ""}`}
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
                 title={authUser.email}
               >
                 <svg
@@ -442,6 +1053,65 @@ export default function App() {
                 <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
               </svg>
             </button>
+          )}
+          {showProfileMenu && (
+            <div className="profile-menu">
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  setActiveProfileModal("how-to-use");
+                }}
+              >
+                How to Use
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  setActiveProfileModal("about");
+                }}
+              >
+                About ChordFormatter
+              </button>
+
+              <button onClick={() => setShowProfileMenu(false)}>
+                Buy Me a Coffee
+              </button>
+
+              <button onClick={() => setShowProfileMenu(false)}>
+                Ratings & Feedback
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  setActiveProfileModal("version");
+                }}
+              >
+                App Version
+              </button>
+
+              <div className="profile-menu-divider"></div>
+
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  setShowAccountSettings(true);
+                }}
+              >
+                Settings
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  handleSignOut();
+                }}
+                className="profile-menu-signout"
+              >
+                Sign Out
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -492,15 +1162,6 @@ export default function App() {
                     </button>
                   </div>
                 )}
-
-                {!showPasswordChange && (
-                  <button
-                    className="change-password-button"
-                    onClick={handleSignOut}
-                  >
-                    Sign Out
-                  </button>
-                )}
               </div>     
             </div>
           </div>
@@ -526,6 +1187,11 @@ export default function App() {
         </div>
       )}
 
+      <ProfileModals
+        activeModal={activeProfileModal}
+        onClose={() => setActiveProfileModal(null)}
+      />
+
       <main className="main-content">
         <section className="welcome">
           <div>
@@ -540,15 +1206,104 @@ export default function App() {
           <section className="panel editor-panel">
             <div className="panel-header">
               <div>
-                <span className="panel-label">01 / EDITOR</span>
-                <h3>Chord Input</h3>
+                <span className="panel-label">EDITOR</span>
               </div>
-              <span className="panel-icon">✎</span>
+
+              <div className="preview-actions">
+                <button
+                  className="print-button"
+                  type="button"
+                  onClick={() => document.getElementById("import-song-file").click()}
+                >
+                  Import File (.txt/.cho)
+                </button>
+
+                <input
+                  id="import-song-file"
+                  type="file"
+                  accept=".txt,.cho"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+
+                    if (!file) return;
+
+                    const reader = new FileReader();
+
+                    reader.onload = (event) => {
+                      const fileContent = event.target.result;
+                      const lines = fileContent.split(/\r?\n/);
+
+                      const metadata = {};
+                      const lyrics = [];
+
+                      lines.forEach((line) => {
+                        const match = line.match(
+                          /^\s*(?:\{(title|artist|instrument|key|tempo)\s*:\s*(.*?)\}|(title|artist|instrument|key|tempo)\s*:\s*(.*))\s*$/i
+                        );
+
+                        if (match) {
+                          const field = (match[1] || match[3]).toLowerCase();
+                          const value = match[2] || match[4];
+
+                          metadata[field] = value.trim();
+                        } else {
+                          lyrics.push(line);
+                        }
+                      });
+
+                      if (metadata.title) {
+                        setSongTitle(metadata.title);
+                      }
+
+                      if (metadata.artist) {
+                        setArtist(metadata.artist);
+                      }
+
+                      if (metadata.instrument) {
+                        setInstrument(metadata.instrument);
+                      }
+
+                      if (metadata.key) {
+                        setSongKey(metadata.key);
+                      }
+
+                      if (metadata.tempo) {
+                        setTempo(metadata.tempo.replace(/[^0-9]/g, ""));
+                      }
+
+                      setInput(lyrics.join("\n").trim());
+                    };
+
+                    reader.readAsText(file);
+
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  className="stage-toggle"
+                  type="button"
+                  onClick={loadSampleSong}
+                >
+                  Load Sample
+                </button>
+                <button
+                  className="stage-toggle"
+                  type="button"
+                  onClick={newSong}
+                >
+                  New Song
+                </button>
+                <button
+                  className="stage-toggle"
+                  type="button"
+                  onClick={() => setIsFullscreenEdit(!isFullscreenEdit)}
+                >
+                  Fullscreen Edit
+                </button>
+              </div>
             </div>
 
-            <div className="editor-info">
-              Use square brackets for chords, like <code>[G]</code> or <code>[Am]</code>.
-            </div>
             <div className="song-details">
               <div className="song-field">
                 <label htmlFor="songTitle">SONG TITLE</label>
@@ -571,30 +1326,254 @@ export default function App() {
                   placeholder="Enter artist name"
                 />
               </div>
+              
+              <div className="song-field">
+                <label>INSTRUMENT</label>
+
+                <div className="custom-dropdown">
+                  <button
+                    type="button"
+                    className="custom-dropdown-button"
+                    onClick={() => setInstrumentDropdownOpen((prev) => !prev)}
+                  >
+                    {instrument}
+                    <span>▾</span>
+                  </button>
+
+                  {instrumentDropdownOpen && (
+                    <div className="custom-dropdown-menu">
+                      {["Guitar", "Piano", "Ukulele", "Keyboard", "Bass"].map((option) => (
+                        <button
+                          type="button"
+                          key={option}
+                          className={`custom-dropdown-option ${
+                            instrument === option ? "selected" : ""
+                          }`}
+                          onClick={() => {
+                            setInstrument(option);
+
+                            if (option === "Piano" || option === "Keyboard" || option === "Vocals") {
+                              setCapo(0);
+                            }
+
+                            setInstrumentDropdownOpen(false);
+                          }}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+                            
+              <div className="song-field">
+                <label>KEY</label>
+
+                <div className="custom-dropdown">
+                  <button
+                    type="button"
+                    className="custom-dropdown-button"
+                    onClick={() => setKeyDropdownOpen((prev) => !prev)}
+                  >
+                    {songKey}
+                    <span>▾</span>
+                  </button>
+
+                  {keyDropdownOpen && (
+                    <div className="custom-dropdown-menu">
+                      {["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map((option) => (
+                        <button
+                          type="button"
+                          key={option}
+                          className={`custom-dropdown-option ${
+                            songKey === option ? "selected" : ""
+                          }`}
+                          onClick={() => {
+                            setSongKey(option);
+                            setKeyDropdownOpen(false);
+                          }}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="song-field">
-                <label htmlFor="instrument">INSTRUMENT</label>
-                <select
-                  id="instrument"
-                  value={instrument}
-                  onChange={(event) => setInstrument(event.target.value)}
-                >
-                  <option value="Guitar">Guitar</option>
-                  <option value="Piano">Piano</option>
-                  <option value="Ukulele">Ukulele</option>
-                  <option value="Keyboard">Keyboard</option>
-                  <option value="Bass">Bass</option>
-                </select>
+                <label htmlFor="tempo">TEMPO (BPM)</label>
+                <input
+                  id="tempo"
+                  type="number"
+                  min="1"
+                  max="300"
+                  value={tempo}
+                  onChange={(event) => setTempo(event.target.value)}
+                  placeholder="e.g. 120"
+                />
               </div>
             </div>
+            <div className="helper-toolbar">
+              <span className="helper-label">TOOLBAR</span>
+              <div className="helper-button">
+                <button
+                  type="button"
+                  className="helper-toolbar-button"
+                  onClick={() => insertSymbol("[Verse]\n")}
+                >
+                  [Verse]
+                </button>
+
+                <button
+                  type="button"
+                  className="helper-toolbar-button"
+                  onClick={() => insertSymbol("[Chorus]\n")}
+                >
+                  [Chorus]
+                </button>
+
+                <button
+                  type="button"
+                  className="helper-toolbar-button"
+                  onClick={() => insertSymbol("[Bridge]\n")}
+                >
+                  [Bridge]
+                </button>
+
+                <button
+                  type="button"
+                  className="helper-toolbar-button"
+                  onClick={() => insertSymbol("#")}
+                >
+                  #
+                </button>
+
+                <button
+                  type="button"
+                  className="helper-toolbar-button auto-format"
+                  onClick={() => insertSymbol("♭")}
+                >
+                  ♭
+                </button>
+
+                <button
+                  type="button"
+                  className="helper-toolbar-button"
+                  onClick={autoFormatPaste}
+                >
+                  ✨ Auto-Format Paste
+                </button>
+              </div>
+            </div> 
 
             <textarea
-              className="chord-input"
+              className={`chord-input ${isFullscreenEdit ? "fullscreen-edit" : ""}`}
               value={input}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(e) => setInput(e.target.value)}
               spellCheck="false"
-              placeholder="[G]Write your lyrics here..."
+              placeholder="Write or paste your lyrics here...
+Use square brackets for chords, like [G] or [Am]."
             />
+            {isFullscreenEdit && (
+              <div
+                className="fullscreen-editor-options-wrapper"
+                ref={editorOptionsRef}
+              >
+                <button
+                  type="button"
+                  className="fullscreen-options-toggle"
+                  onClick={() =>
+                    setShowEditorOptions(!showEditorOptions)
+                  }
+                >
+                  Options
+                  <span>{showEditorOptions ? "▲" : "▼"}</span>
+                </button>
+
+                {showEditorOptions && (
+                  <div className="fullscreen-editor-options">
+                    <div className="fullscreen-options-header">
+                      <span>Options</span>
+
+                      <button
+                        type="button"
+                        className={`options-pin-button ${
+                          isOptionsPinned ? "pinned" : ""
+                        }`}
+                        onClick={() =>
+                          setIsOptionsPinned(!isOptionsPinned)
+                        }
+                        title={isOptionsPinned ? "Unpin Options" : "Pin Options"}
+                      >
+                        {isOptionsPinned ? "📌" : "📍"}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="fullscreen-option-button"
+                      onClick={() => insertSymbol("[Verse]\n")}
+                    >
+                      [Verse]
+                    </button>
+
+                    <button
+                      type="button"
+                      className="fullscreen-option-button"
+                      onClick={() => insertSymbol("[Chorus]\n")}
+                    >
+                      [Chorus]
+                    </button>
+
+                    <button
+                      type="button"
+                      className="fullscreen-option-button"
+                      onClick={() => insertSymbol("[Bridge]\n")}
+                    >
+                      [Bridge]
+                    </button>
+
+                    <button
+                      type="button"
+                      className="fullscreen-option-button"
+                      onClick={() => insertSymbol("#")}
+                    >
+                      Sharp #
+                    </button>
+
+                    <button
+                      type="button"
+                      className="fullscreen-option-button"
+                      onClick={() => insertSymbol("♭")}
+                    >
+                      Flat ♭
+                    </button>
+
+                    <button
+                      type="button"
+                      className="fullscreen-option-button auto-format-option"
+                      onClick={autoFormatPaste}
+                    >
+                      ✨ Auto-Format
+                    </button>
+
+                    <button
+                      type="button"
+                      className="fullscreen-close-editor-button"
+                      onClick={() => {
+                        setIsFullscreenEdit(false);
+                        setShowEditorOptions(false);
+                        setIsOptionsPinned(false);
+                      }}
+                    >
+                      ✕ Close Editor
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="editor-footer">
               <span>{input.split('\n').length} lines</span>
@@ -614,126 +1593,230 @@ export default function App() {
           >
             <div className="panel-header">
               <div>
-                <span className="panel-label">02 / PREVIEW</span>
-                <h3>Chord Sheet</h3>
+                <span className="panel-label">PREVIEW</span>
               </div>
               
-              <div className="preview-actions">
+              <div className="preview-actions">               
                 <button
                   className="print-button"
                   onClick={() => window.print()}
                 >
-                  Print / Save PDF
+                  Export / Print
                 </button>
+
+                <div className="saved-songs-wrapper">
+                  <button
+                    className="stage-toggle"
+                    onClick={() => setShowSavedSongs((value) => !value)}
+                  >
+                    Saved Songs ▾
+                  </button>
+
+                  {showSavedSongs && (
+                    <div className="saved-songs-dropdown">
+                      <div className="saved-songs-dropdown-header">
+                        <span>Saved Songs</span>
+                        <span className="saved-songs-limit">
+                          {savedSongs.length} saved
+                        </span>
+                      </div>
+
+                      <div className="saved-songs-dropdown-list">
+                        {savedSongs.length === 0 ? (
+                          <p>No saved songs yet.</p>
+                        ) : (
+                          savedSongs.map((song, index) => (
+                            <div
+                              key={song.id}
+                              className={`saved-song-item ${
+                                selectedSongId === song.id ? "selected" : ""
+                              }`}
+                              onClick={() => loadSavedSong(song)}
+                            >
+                              <div className="saved-song-meta">
+                                <span className="saved-song-number">
+                                  {index + 1}
+                                </span>
+
+                                <span className="saved-song-artist">
+                                  {song.artist || "Unknown Artist"}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  className="delete-saved-song-button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    deleteSavedSong(index);
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+
+                              <div className="saved-song-details">
+                                <span className="saved-song-title">
+                                  {song.title || "Untitled Song"}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <button
                   className="stage-toggle"
-                  onClick={() => setStageMode((value) => !value)}
+                  onClick={saveSong}
                 >
-                  {stageMode ? 'Exit Stage Mode' : 'Stage Mode'}
+                  Save
                 </button>
 
-                <button
-                  className="stage-toggle"
-                  onClick={() => setPreviewFullscreen((value) => !value)}
-                >
-                  {previewFullscreen ? 'Exit Fullscreen' : 'Fullscreen Preview'}
-                </button>
-
-                {previewFullscreen && (
-                  <>
-                    <button
-                      className="stage-toggle"
-                      onClick={() =>
-                        setPreviewFontSize((value) => Math.max(12, value - 2))
-                      }
-                    >
-                      A−
-                    </button>
-
-                    <button
-                      className="stage-toggle"
-                      onClick={() =>
-                        setPreviewFontSize((value) => Math.min(32, value + 2))
-                      }
-                    >
-                      A+
-                    </button>
-
-                    <button
-                      className="stage-toggle"
-                      onClick={() => setAutoScroll((value) => !value)}
-                    >
-                      {autoScroll ? 'Pause Scroll' : 'Play Scroll'}
-                    </button>
-
-                    <button
-                      className="stage-toggle"
-                      onClick={() =>
-                        setScrollSpeed((value) => Math.max(1, value - 1))
-                      }
-                    >
-                      Speed −
-                    </button>
-
-                    <span className="scroll-speed-label">
-                      Speed {scrollSpeed}
-                    </span>
-
-                    <button
-                      className="stage-toggle"
-                      onClick={() =>
-                        setScrollSpeed((value) => Math.min(5, value + 1))
-                      }
-                    >
-                      Speed +
-                    </button>
-                  </>
+                {selectedSongId && (
+                  <button
+                    className="stage-toggle"
+                    onClick={updateSong}
+                  >
+                    Update
+                  </button>
                 )}
               </div>
             </div>
+            <div className="music-controls-toolbar transpose-etc">                          
+              <div className="music-control-group">
+                <span className="music-control-label">
+                  TRANSPOSE {transpose > 0 ? `+${transpose}` : transpose < 0 ? transpose : ""}
+                </span>
+                <div className="music-control-buttons">
+                  <button
+                    type="button"
+                    onClick={() => setTranspose((prev) => prev - 1)}
+                  >
+                    −
+                  </button>
 
-            <div className="transpose-bar">
-              <span className="transpose-label">TRANSPOSE</span>
+                  <button
+                    type="button"
+                    onClick={() => setTranspose((prev) => prev + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
 
-              <div className="transpose-controls">
-                <button
-                  onClick={() => setTranspose((value) => value - 1)}
-                  aria-label="Transpose down"
-                >
-                  −
-                </button>
-
-                <span className="transpose-value">
-                  {transpose > 0 ? `+${transpose}` : transpose}
+              <div className="music-control-group">
+                <span className="music-control-label">
+                  CAPO {capo > 0 ? `· ${capo}` : ""}
                 </span>
 
-                <button
-                  onClick={() => setTranspose((value) => value + 1)}
-                  aria-label="Transpose up"
-                >
-                  +
-                </button>
+                <div className="music-control-buttons">
+                  <button
+                    type="button"
+                    onClick={() => setCapo((prev) => Math.max(0, prev - 1))}
+                    disabled={
+                      capo === 0 ||
+                      instrument === "Piano" ||
+                      instrument === "Keyboard" ||
+                      instrument === "Vocals"
+                    }
+                  >
+                    −
+                  </button>
 
-                <button
-                  className="reset-button"
-                  onClick={() => setTranspose(0)}
-                >
-                  Reset
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setCapo((prev) => Math.min(11, prev + 1))}
+                    disabled={
+                      capo === 11 ||
+                      instrument === "Piano" ||
+                      instrument === "Keyboard" ||
+                      instrument === "Vocals"
+                    }
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
 
-                <button
-                  className="reset-button"
-                  onClick={clearSong}
-                >
-                  Clear Song
-                </button>
+              <div className="music-control-group">
+                <span className="music-control-label">
+                  FONT SIZE · {previewFontSize}px
+                </span>
+                <div className="music-control-buttons">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewFontSize((prev) => Math.max(12, prev - 1))
+                    }
+                    disabled={previewFontSize <= 12}
+                  >
+                    −
+                  </button>
 
-                <button
-                  className="reset-button"
-                  onClick={loadSampleSong}
-                >
-                  Load Sample
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewFontSize((prev) => Math.min(32, prev + 1))
+                    }
+                    disabled={previewFontSize >= 32}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="music-control-group">
+                <span className="music-control-label">COLUMNS</span>
+
+                <div className="music-control-buttons">
+                  <button
+                    type="button"
+                    className={previewColumns === 1 ? "active" : ""}
+                    onClick={() => setPreviewColumns(1)}
+                  >
+                    1
+                  </button>
+
+                  <button
+                    type="button"
+                    className={previewColumns === 2 ? "active" : ""}
+                    onClick={() => setPreviewColumns(2)}
+                  >
+                    2
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="playback-controls-toolbar">
+              <div className="music-control-group">
+                <span className="music-control-label">CHORD DIAGRAMS</span>
+                <div className="music-control-buttons">
+                  <select
+                    className="music-control-select"
+                    value={showChordDiagrams}
+                    onChange={(e) => setShowChordDiagrams(e.target.value)}
+                  >
+                    <option value="show">Show</option>
+                    <option value="hide">Hide</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="music-control-group">
+                <span className="music-control-label">SCROLL</span>
+                <div className="music-control-buttons">
+                  <button type="button">−</button>
+                  <button type="button">▶</button>
+                  <button type="button">+</button>
+                </div>
+              </div>
+
+              <div className="music-control-group stage-mode">
+                <button type="button" className="stage-mode-button">
+                  Stage Mode
                 </button>
               </div>
             </div>
@@ -747,111 +1830,60 @@ export default function App() {
                 <p>
                   {artist || 'Unknown Artist'} — {instrument}
                 </p>
-              </div>
+                <p className="sheet-metadata">
+                  Key: {songKey} | Tempo: {tempo || '--'} BPM
+                </p>
+                {capo > 0 && (
+                  <p className="sheet-metadata">
+                    Capo: Fret {capo}
+                  </p>
+                )}
 
+              </div>                              
+                {showChordDiagrams === "show" && (
+                  <div className="chord-diagrams-container">
+                    {instrument === "Guitar" &&
+                      getUniqueChords(input, transpose - capo).map((chord) => (
+                        <ChordDiagram key={chord} chord={chord} />
+                    ))}
+
+                    {instrument === "Ukulele" &&
+                      getUniqueChords(input, transpose - capo).map((chord) => (
+                        <UkuleleChordDiagram key={chord} chord={chord} />
+                    ))}
+                    
+                    {instrument === "Piano" &&
+                      getUniqueChords(input, transpose - capo).map((chord) => (
+                        <PianoChordDiagram key={chord} chord={chord} />
+                    ))}
+
+                    {instrument === "Bass" &&
+                      getUniqueChords(input, transpose - capo).map((chord) => (
+                        <BassChordDiagram key={chord} chord={chord} />
+                    ))}
+
+
+                  </div>
+                )}
               <div
                 className="sheet-content"
                 style={{
-                  fontSize: previewFullscreen
-                    ? `${previewFontSize}px`
-                    : undefined,
+                  fontSize: `${previewFontSize}px`,
+                  columnCount: previewColumns,
+                  columnGap: "32px",
                 }}
               >
                 {lines.map((line, index) => (
                   <div className="sheet-line" key={index}>
-                    {parseLine(line, transpose)}
+                    {parseLine(line, transpose - capo)}
                   </div>
                 ))}
               </div>
             </div>
-            
             <div className="preview-footer">
               <div className="preview-footer-info">
                 <span>♫</span> Formatted in real time
               </div>
-
-              <div className="my-songs-actions">
-                <button
-                  className="reset-button"
-                  onClick={selectedSongId !== null ? updateSong : saveSong}
-                >
-                  {selectedSongId !== null ? "Update Song" : "Save Song"}
-                </button>
-                <button
-                  className="reset-button"
-                  onClick={() => setShowSavedSongs(!showSavedSongs)}
-                >
-                  Saved Songs ▲
-                </button>
-              </div>        
-              {showSavedSongs && (
-                <div className="saved-songs-dropdown">
-                  <div className="saved-songs-dropdown-header">
-                    <h3>Saved Songs</h3>
-                    <span className="saved-songs-limit">
-                      {savedSongs.length} / 3 Song(s)
-                    </span>
-                  </div>
-
-                  <div className="saved-songs-dropdown-list">
-                    {savedSongs.length === 0 ? (
-                      <p>No saved songs yet.</p>
-                    ) : (
-                      savedSongs.map((song, index) => (
-                      <div
-                        className={`saved-song-item ${
-                          selectedSongId === song.id ? "selected" : ""
-                        }`}
-                        key={song.id || index}
-                        onClick={() => {
-                          setSelectedSongId(song.id);
-
-                          setSongTitle(song.title);
-                          setArtist(song.artist);
-                          setInstrument(song.instrument)
-                          setInput(song.lyrics);
-                          setTranspose(song.transpose);
-                          setShowSavedSongs(false);
-                        }}
-                      >
-                          <div className="saved-song-meta">
-                            <span className="saved-song-number">
-                              {String(index + 1).padStart(2, "0")}
-                            </span>
-
-                            <span className="saved-song-artist">
-                              {song.artist}
-                            </span>
-
-                            <button
-                              className="delete-saved-song-button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-
-                                const confirmed = window.confirm(
-                                  `Are you sure you want to delete "${song.title}"?`
-                                );
-
-                                if (confirmed) {
-                                  deleteSavedSong(index);
-                                }
-                              }}
-                              title="Delete song"
-                            >
-                              🗑
-                            </button>
-                          </div>
-                        <div className="saved-song-details">
-                          <span className="saved-song-title">
-                            {song.title}
-                          </span>
-                        </div>
-                      </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </section>
         </div>
