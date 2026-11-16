@@ -1109,7 +1109,7 @@ export default function App() {
             <div>
               <div className="brand-title-row">
                 <h1>Chord<span>Formatter</span></h1>
-                <span className="brand-version-badge">v. 1.0.0</span>
+                <span className="brand-version-badge">v1.0.0</span>
               </div>
               <p>FORMAT YOUR MUSIC, YOUR WAY</p>
             </div>
