@@ -416,12 +416,41 @@ button {
 .app-footer {
   display: flex;
   justify-content: space-between;
-  margin-top: 35px;
-  padding-top: 20px;
-  border-top: 1px solid #222936;
-  color: #657083;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.footer-brand-name{
+  color: #b8f36b;
+  font-weight:500;
+  font-size: 11px;
+}
+.footer-brand-label{
+  color: #b8f36b;
   font-size: 10px;
-  letter-spacing: 1px;
+}
+.footer-legal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  text-align: right;
+}
+.footer-copyright {
+  font-size: 11px;
+  color: #64748b;
+}
+.footer-license {
+  font-size: 10px;
+  color: #b8f36b;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
 }
 
 @media (max-width: 900px) {

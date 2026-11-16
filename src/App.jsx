@@ -2241,8 +2241,19 @@ Use square brackets for chords, like [G] or [Am]."
         </div>
 
         <footer className="app-footer">
-          <span>CHORDSHEET FORMATTER</span>
-          <span>Made for musicians ♡</span>
+          <div className="footer-brand">
+            <span className="footer-brand-label">Made for musicians ♡</span>
+          </div>
+
+          <div className="footer-legal">
+            <span className="footer-copyright">
+              © 2026 Ruben Radaza Jr. All Rights Reserved.
+            </span>
+
+            <span className="footer-license">
+              Proprietary License
+            </span>
+          </div>
         </footer>
       </main>
     </div>
