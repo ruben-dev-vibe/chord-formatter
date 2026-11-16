@@ -573,7 +573,10 @@ function BassChordDiagram({ chord }) {
 export default function App() {
   const [input, setInput] = useState(SAMPLE_SHEET)
   const [transpose, setTranspose] = useState(0)
+
   const [stageMode, setStageMode] = useState(false)
+  const [showStageOptions, setShowStageOptions] = useState(false);
+  const [isStageOptionsPinned, setIsStageOptionsPinned] = useState(false);
 
   const [previewFullscreen, setPreviewFullscreen] = useState(false)
   const [isFullscreenEdit, setIsFullscreenEdit] = useState(false);
@@ -597,6 +600,28 @@ export default function App() {
 
   const [showChordDiagrams, setShowChordDiagrams] = useState("show");
 
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+  const [autoScrollSpeed, setAutoScrollSpeed] = useState(1);
+  const stageOptionsRef = useRef(null);
+
+  useEffect(() => {
+    if (!showStageOptions) return;
+
+    const handleClickOutside = (event) => {
+      if (
+        stageOptionsRef.current &&
+        !stageOptionsRef.current.contains(event.target)
+      ) {
+        setShowStageOptions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStageOptions]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -992,6 +1017,34 @@ export default function App() {
     !sessionStorage.getItem("welcomeModalDismissed")
   );
 
+  useEffect(() => {
+    if (!isAutoScrolling) return;
+
+    const scrollInterval = setInterval(() => {
+      const preview = sheetPreviewRef.current;
+
+      if (!preview) return;
+
+      const maxScroll =
+        preview.scrollHeight - preview.clientHeight;
+
+      // Stop when the song reaches the bottom
+      if (preview.scrollTop >= maxScroll - 1) {
+        preview.scrollTop = maxScroll;
+        setIsAutoScrolling(false);
+        return;
+      }
+
+      // Scroll smoothly at the selected speed
+      preview.scrollTop = Math.min(
+        preview.scrollTop + autoScrollSpeed,
+        maxScroll
+      );
+    }, 20);
+
+    return () => clearInterval(scrollInterval);
+  }, [isAutoScrolling, autoScrollSpeed]);
+
   return (
   <>
     {showWelcomeModal && (
@@ -1046,13 +1099,22 @@ export default function App() {
 
     <div className={`app ${stageMode ? 'stage-mode' : ''}`}>
       <header className="app-header">
-        <div className="brand">
-          <div className="brand-icon">♫</div>
-          <div>
-            <h1>Chord<span>Formatter</span></h1>
-            <p>FORMAT YOUR MUSIC, YOUR WAY</p>
+        <a
+          href="https://chord-formatter.vercel.app/"
+          className="brand-link"
+          aria-label="ChordFormatter Home"
+        >
+          <div className="brand">
+            <div className="brand-icon">♫</div>
+            <div>
+              <div className="brand-title-row">
+                <h1>Chord<span>Formatter</span></h1>
+                <span className="brand-version-badge">v. 1.0.0</span>
+              </div>
+              <p>FORMAT YOUR MUSIC, YOUR WAY</p>
+            </div>
           </div>
-        </div>
+        </a>
 
         <div className="header-actions" ref={profileMenuRef}>
           <a
@@ -1859,25 +1921,62 @@ Use square brackets for chords, like [G] or [Am]."
               </div>
 
               <div className="music-control-group">
-                <span className="music-control-label">SCROLL</span>
+                <span className="music-control-label">
+                  {autoScrollSpeed.toFixed(1)}
+                </span>
+
                 <div className="music-control-buttons">
-                  <button type="button">−</button>
-                  <button type="button">▶</button>
-                  <button type="button">+</button>
+                  {/* ORIGINAL SPEED DECREASE BUTTON */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAutoScrollSpeed((prev) =>
+                        Math.max(0.5, prev - 0.1)
+                      )
+                    }
+                  >
+                    −
+                  </button>
+
+                  {/* ORIGINAL PLAY / PAUSE BUTTON */}
+                  <button
+                    type="button"
+                    onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+                  >
+                    {isAutoScrolling ? "⏸" : "▶"}
+                  </button>
+
+                  {/* ORIGINAL SPEED INCREASE BUTTON */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAutoScrollSpeed((prev) =>
+                        Math.min(5, prev + 0.1)
+                      )
+                    }
+                  >
+                    +
+                  </button>
                 </div>
               </div>
 
               <div className="music-control-group stage-mode">
-                <button type="button" className="stage-mode-button">
-                  Stage Mode
+                <button
+                  type="button"
+                  className="stage-mode-button"
+                  onClick={() => setStageMode(!stageMode)}
+                >
+                  {stageMode ? "Exit Stage Mode" : "Stage Mode"}
                 </button>
               </div>
             </div>
 
             <div
-                className="sheet-preview"
-                ref={sheetPreviewRef}
-              >
+              className={`sheet-preview ${
+                stageMode ? "stage-mode-fullscreen" : ""
+              }`}
+              ref={sheetPreviewRef}
+            >
               <div className="sheet-title">
                 <h2>{songTitle || 'Untitled Song'}</h2>
                 <p>
@@ -1893,31 +1992,31 @@ Use square brackets for chords, like [G] or [Am]."
                 )}
 
               </div>                              
-                {showChordDiagrams === "show" && (
-                  <div className="chord-diagrams-container">
-                    {instrument === "Guitar" &&
-                      getUniqueChords(input, transpose - capo).map((chord) => (
-                        <ChordDiagram key={chord} chord={chord} />
-                    ))}
+                {showChordDiagrams === "show" &&
+                  instrument !== "Keyboard" && (
+                    <div className="chord-diagrams-container">
+                      {instrument === "Guitar" &&
+                        getUniqueChords(input, transpose - capo).map((chord) => (
+                          <ChordDiagram key={chord} chord={chord} />
+                      ))}
 
-                    {instrument === "Ukulele" &&
-                      getUniqueChords(input, transpose - capo).map((chord) => (
-                        <UkuleleChordDiagram key={chord} chord={chord} />
-                    ))}
-                    
-                    {instrument === "Piano" &&
-                      getUniqueChords(input, transpose - capo).map((chord) => (
-                        <PianoChordDiagram key={chord} chord={chord} />
-                    ))}
+                      {instrument === "Ukulele" &&
+                        getUniqueChords(input, transpose - capo).map((chord) => (
+                          <UkuleleChordDiagram key={chord} chord={chord} />
+                      ))}
+                      
+                      {instrument === "Piano" &&
+                        getUniqueChords(input, transpose - capo).map((chord) => (
+                          <PianoChordDiagram key={chord} chord={chord} />
+                      ))}
 
-                    {instrument === "Bass" &&
-                      getUniqueChords(input, transpose - capo).map((chord) => (
-                        <BassChordDiagram key={chord} chord={chord} />
-                    ))}
-
-
-                  </div>
-                )}
+                      {instrument === "Bass" &&
+                        getUniqueChords(input, transpose - capo).map((chord) => (
+                          <BassChordDiagram key={chord} chord={chord} />
+                      ))}
+                    </div>
+                  )
+                }
               <div
                 className="sheet-content"
                 style={{
@@ -1933,12 +2032,212 @@ Use square brackets for chords, like [G] or [Am]."
                 ))}
               </div>
             </div>
+            {stageMode && (
+              <div
+                className="stage-options-wrapper"
+                ref={stageOptionsRef}
+              >
+                <button
+                  type="button"
+                  className="fullscreen-options-toggle"
+                  onClick={() => setShowStageOptions(!showStageOptions)}
+                >
+                  Options
+                  <span>{showStageOptions ? "▲" : "▼"}</span>
+                </button>
+
+                {showStageOptions && (
+                  <div className="fullscreen-editor-options">
+
+                    {/* OPTIONS HEADER */}
+                    <div className="fullscreen-options-header">
+                      <span>Stage Mode Options</span>
+
+                      <button
+                        type="button"
+                        className={`options-pin-button ${
+                          isStageOptionsPinned ? "pinned" : ""
+                        }`}
+                        onClick={() =>
+                          setIsStageOptionsPinned(!isStageOptionsPinned)
+                        }
+                        title={
+                          isStageOptionsPinned
+                            ? "Unpin Options"
+                            : "Pin Options"
+                        }
+                      >
+                        {isStageOptionsPinned ? "📌" : "📍"}
+                      </button>
+                    </div>
+
+                    {/* CHORD DIAGRAMS */}
+                    <button
+                      type="button"
+                      className="fullscreen-option-button"
+                      onClick={() =>
+                        setShowChordDiagrams(
+                          showChordDiagrams === "show" ? "hide" : "show"
+                        )
+                      }
+                    >
+                      {showChordDiagrams === "show"
+                        ? "Hide Chord Diagrams"
+                        : "Show Chord Diagrams"}
+                    </button>
+
+                    {/* FONT SIZE */}
+                    <div className="fullscreen-options-header">
+                      <span>Font Size</span>
+                      <span>{previewFontSize}px</span>
+                    </div>
+
+                    <div className="stage-font-size-controls">
+                      <button
+                        type="button"
+                        className="fullscreen-option-button"
+                        onClick={() =>
+                          setPreviewFontSize((prev) =>
+                            Math.max(12, prev - 1)
+                          )
+                        }
+                      >
+                        A−
+                      </button>
+
+                      <button
+                        type="button"
+                        className="fullscreen-option-button"
+                        onClick={() =>
+                          setPreviewFontSize((prev) =>
+                            Math.min(32, prev + 1)
+                          )
+                        }
+                      >
+                        A+
+                      </button>
+                    </div>
+
+                    {/* COLUMNS */}
+                    <div className="fullscreen-options-header">
+                      <span>Columns</span>
+                    </div>
+
+                    <div className="stage-font-size-controls">
+                      <button
+                        type="button"
+                        className="fullscreen-option-button"
+                        onClick={() => setPreviewColumns(1)}
+                      >
+                        1 Column
+                      </button>
+
+                      <button
+                        type="button"
+                        className="fullscreen-option-button"
+                        onClick={() => setPreviewColumns(2)}
+                      >
+                        2 Columns
+                      </button>
+                    </div>
+
+                    {/* TRANSPOSE */}
+                    <div className="fullscreen-options-header">
+                      <span>Transpose</span>
+                      <span>{transpose > 0 ? `+${transpose}` : transpose}</span>
+                    </div>
+
+                    <div className="stage-font-size-controls">
+                      <button
+                        type="button"
+                        className="fullscreen-option-button"
+                        onClick={() =>
+                          setTranspose((prev) => Math.max(-12, prev - 1))
+                        }
+                      >
+                        −
+                      </button>
+
+                      <button
+                        type="button"
+                        className="fullscreen-option-button"
+                        onClick={() =>
+                          setTranspose((prev) => Math.min(12, prev + 1))
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* CAPO */}
+                    <div className="fullscreen-options-header">
+                      <span>Capo</span>
+                      <span>{capo === 0 ? "Off" : `Fret ${capo}`}</span>
+                    </div>
+
+                    <div className="stage-font-size-controls">
+                      <button
+                        type="button"
+                        className="fullscreen-option-button"
+                        onClick={() =>
+                          setCapo((prev) => Math.max(0, prev - 1))
+                        }
+                      >
+                        −
+                      </button>
+
+                      <button
+                        type="button"
+                        className="fullscreen-option-button"
+                        onClick={() =>
+                          setCapo((prev) => Math.min(12, prev + 1))
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* EXIT STAGE MODE */}
+                    <button
+                      type="button"
+                      className="fullscreen-close-editor-button"
+                      onClick={() => {
+                        setStageMode(false);
+                        setShowStageOptions(false);
+                        setIsStageOptionsPinned(false);
+                      }}
+                    >
+                      ✕ Exit Stage Mode
+                    </button>
+
+                  </div>
+                )}
+              </div>
+            )}       
             <div className="preview-footer">
               <div className="preview-footer-info">
                 <span>♫</span> Formatted in real time
               </div>
             </div>
-          </section>
+            {/* STAGE MODE AUTO-SCROLL */}
+              {stageMode && (
+                <div className="stage-auto-scroll-floating">
+
+                  {/* PLAY / PAUSE */}
+                  <button
+                    type="button"
+                    className="stage-auto-scroll-play"
+                    onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+                    title={isAutoScrolling ? "Pause Auto-Scroll" : "Start Auto-Scroll"}
+                  >
+                    {isAutoScrolling ? "⏸" : "▶"}
+                  </button>
+                  {/* SPEED DISPLAY */}
+                  {/* SPEED SLIDER */}
+                  {/* RESET SPEED */}
+                </div>
+              )}
+            </section>
         </div>
 
         <footer className="app-footer">
