@@ -1,25 +1,26 @@
-# ChordSheet Formatter
+# ChordFormatter
 
-A simple and responsive web app for formatting chord sheets, transposing chords, and managing saved songs.
+A responsive web application for formatting chord sheets, transposing songs, and managing your song library. Built for musicians who want clean, readable chord sheets for practice and live performances.
 
 ## Live Demo
 
-Try the app here: [ChordSheet Formatter](https://chord-formatter.vercel.app/)
+Try ChordFormatter here: [https://chord-formatter.vercel.app/](https://chord-formatter.vercel.app/)
 
 ## Features
 
 - **Live Chord Formatting** – Format chords using bracket notation such as `[G]`, `[Am]`, and `[C]`.
 - **Transpose Songs** – Change song keys with transpose up, down, and reset controls.
-- **Song Management** – Edit song titles and artist names.
-- **Save Songs** – Save up to 3 songs with the Free Plan.
+- **Song Metadata** – Add song titles, artist names, instruments, keys, and tempo.
+- **Import Songs** – Import chord sheets from `.txt` and `.cho` files.
+- **Save Songs** – Save up to 3 songs with a free account.
 - **Update Saved Songs** – Edit existing saved songs without creating duplicates.
-- **Load Sample Song** – Try the app with the included sample song.
-- **Delete Songs** – Remove saved songs when no longer needed.
+- **Delete Songs** – Remove saved songs from your library.
+- **Load Sample Song** – Try the app with an included sample song.
 - **Stage Mode** – Display larger lyrics and chords for easier reading during performances.
 - **Fullscreen Preview** – Expand the preview for a better viewing experience.
+- **Transpose and Capo Controls** – Adjust song keys and capo positions.
 - **Print / Save as PDF** – Generate clean, readable chord sheets.
 - **Responsive Design** – Works on desktop and mobile devices.
-- **Local Storage** – Saved songs persist after refreshing the browser.
 
 ## Built With
 
@@ -27,7 +28,7 @@ Try the app here: [ChordSheet Formatter](https://chord-formatter.vercel.app/)
 - Vite
 - JavaScript
 - CSS
-- Browser Local Storage
+- Supabase
 
 ## Getting Started
 
@@ -41,7 +42,7 @@ Try the app here: [ChordSheet Formatter](https://chord-formatter.vercel.app/)
 1. Clone the repository:
 
    ```bash
-   git clone YOUR_GITHUB_REPOSITORY_URL
+   git clone https://github.com/ruben-dev-vibe/chord-formatter.git
    ```
 
 2. Navigate into the project folder:
@@ -69,19 +70,23 @@ Try the app here: [ChordSheet Formatter](https://chord-formatter.vercel.app/)
 1. Enter your song lyrics in the editor.
 2. Add chords using square brackets, for example `[G]Amazing [C]Grace`.
 3. View the formatted chord sheet in real time.
-4. Transpose the song to your preferred key.
-5. Save, update, or delete songs using the Saved Songs feature.
-6. Use Stage Mode or Fullscreen Preview for performances.
-7. Print or save your formatted chord sheet as a PDF.
+4. Add song information such as title, artist, instrument, key, and tempo.
+5. Transpose the song to your preferred key.
+6. Save, update, or delete songs using your account.
+7. Import existing chord sheets from supported files.
+8. Use Stage Mode or Fullscreen Preview for performances.
+9. Print or save your formatted chord sheet as a PDF.
 
 ## Free Plan
 
-The Free Plan allows users to save up to 3 songs locally in their browser.
-
-## Live Demo
-
-Coming soon.
+The Free Plan allows registered users to save up to 3 songs to their account.
 
 ## License
 
-This project is currently a personal portfolio project. Licensing details will be added before public release.
+Copyright © 2026 Ruben Radaza Jr. All Rights Reserved.
+
+ChordFormatter is proprietary software. All rights are reserved by the copyright holder.
+
+See the [LICENSE](LICENSE) file for the full licensing terms.
+
+**This project is not open source.** No permission is granted to copy, modify, distribute, or use this software except as expressly authorized by the copyright holder.
