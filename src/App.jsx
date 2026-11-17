@@ -1118,7 +1118,7 @@ export default function App() {
 
         <div className="header-actions" ref={profileMenuRef}>
           <a
-            href="mailto:moonsteraxy@gmail.com?subject=Inquiry%20about%20ChordFormatter"
+            href="mailto:rubenmagsayoradazajr@gmail.com?subject=Inquiry%20about%20ChordFormatter"
             className="email-button"
           >
             ✉ Email Me

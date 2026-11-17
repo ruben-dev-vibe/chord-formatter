@@ -453,71 +453,6 @@ button {
   opacity: 0.8;
 }
 
-@media (max-width: 900px) {
-  .main-content {
-    padding: 35px 4%;
-  }
-
-  .app-header {
-    padding: 0 4%;
-  }
-
-  .workspace {
-    grid-template-columns: 1fr;
-  }
-
-  .chord-input {
-    min-height: 300px;
-  }
-}
-
-@media (max-width: 480px) {
-  .app-header {
-    height: 70px;
-  }
-
-  .brand h1 {
-    font-size: 18px;
-  }
-
-  .header-badge {
-    font-size: 10px;
-    padding: 7px 9px;
-  }
-
-  .welcome h2 {
-    font-size: 27px;
-  }
-
-  .panel-header {
-    padding: 18px;
-  }
-
-  .editor-info {
-    margin: 15px;
-  }
-
-  .chord-input {
-    width: calc(100% - 30px);
-    margin: 0 15px;
-    padding: 12px;
-  }
-
-  .sheet-preview {
-    margin: 12px;
-    padding: 20px 15px;
-  }
-
-  .transpose-bar {
-    padding: 12px 15px;
-  }
-
-  .app-footer {
-    font-size: 9px;
-    gap: 10px;
-  }
-}
-
 /* Stage Mode Toggle */
 .stage-mode-button {
   background: #202c19;
@@ -613,13 +548,6 @@ button {
   border-color: #d3ff9a;
 }
 
-@media (max-width: 480px) {
-  .preview-actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-}
-
 
 
 @media print {
@@ -641,6 +569,9 @@ button {
   .preview-footer-info,
   .app-footer {
     display: none !important;
+  }
+  .chord-diagrams-container {
+    border-bottom: none !important;
   }
 
   /* Main print layout */
@@ -711,20 +642,32 @@ button {
   }
   /* Song content */
   .sheet-content {
-    font-size: 12px;
+    font-size: 14px !important;
     line-height: 1.6 !important;
     color: #222222 !important;
   }
   .sheet-content .chord {
+    display: block !important;
     font-family: "Courier New", monospace !important;
     font-size: 14pt !important;
     font-weight: bold !important;
     color: #A30000 !important;
     line-height: 1.2 !important;
     padding-bottom: 4px !important;
+    white-space: nowrap !important;
+  }
+  .sheet-content .chord-unit {
+    display: inline-block !important;
+    position: relative !important;
+    vertical-align: baseline !important;
+    padding-top: 0.9em !important;
+    line-height: 1.3 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
   .sheet-content .lyrics,
   .sheet-content .plain-text {
+    display: inline !important;
     font-family: Arial, sans-serif !important;
     font-size: 12pt !important;
     font-weight: normal !important;
@@ -1777,16 +1720,6 @@ button {
   }
 }
 
-@media (max-width: 480px) {
-  .welcome-modal {
-    padding: 24px 20px;
-  }
-
-  .welcome-modal h2 {
-    font-size: 22px;
-  }
-}
-
 /*Stage Mode Style*/
 .stage-mode-fullscreen {
   position: fixed;
@@ -2058,5 +1991,84 @@ button {
 
   .stage-auto-scroll-speed-display {
     min-width: 60px;
+  }
+}
+
+@media (max-width: 900px) {
+  .main-content {
+    padding: 35px 4%;
+  }
+
+  .app-header {
+    padding: 0 4%;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .chord-input {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    height: 70px;
+    min-height: 70px;
+    padding: 0 15px;
+    gap: 10px;
+  }
+
+  .brand {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .brand-icon {
+    font-size: 25px;
+  }
+
+  .brand-title-row {
+    gap: 5px;
+  }
+
+  .brand h1 {
+    font-size: 17px;
+    white-space: nowrap;
+  }
+
+  .brand-version-badge {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  .brand p {
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .email-button {
+    font-size: 11px;
+    padding: 8px 9px;
+    white-space: nowrap;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  .profile-menu {
+    right: 0;
+    max-width: calc(100vw - 30px);
   }
 }
